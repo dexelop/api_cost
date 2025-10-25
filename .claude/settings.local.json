@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/pc/.claude/**)",
+      "Bash(gh issue create:*)",
+      "Bash(gh issue:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
