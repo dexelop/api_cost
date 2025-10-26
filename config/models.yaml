@@ -13,175 +13,118 @@ providers:
     website: "https://openai.com/pricing"
     api_endpoint: "https://api.openai.com/v1"
     models:
-      # 🔥 유행 모델
-      gpt-4o:
-        name: "GPT-4o 🔥"
-        input_price: 0.0025    # $2.50 per 1M tokens
-        output_price: 0.01     # $10.00 per 1M tokens
-        context_window: 128000
+      gpt-5:
+        name: "GPT-5 💎"
+        input_price: 0.00125
+        output_price: 0.01
+        context_window: 400000
         vision_capable: true
-        training_cutoff: "2024-10"
+        training_cutoff: "2025-01"
 
-      # 💰 가성비 모델
-      gpt-4o-mini:
-        name: "GPT-4o mini 💰"
-        input_price: 0.00015   # $0.15 per 1M tokens
-        output_price: 0.0006   # $0.60 per 1M tokens
-        context_window: 128000
+      gpt-5-mini:
+        name: "GPT-5 Mini 🔥"
+        input_price: 0.00025
+        output_price: 0.002
+        context_window: 400000
         vision_capable: true
-        training_cutoff: "2024-07"
+        training_cutoff: "2025-01"
 
-      # 💎 프리미엄 모델 (추론 특화)
-      o1:
-        name: "o1 💎"
-        input_price: 0.015     # $15.00 per 1M tokens
-        output_price: 0.06     # $60.00 per 1M tokens
-        context_window: 200000
+      gpt-5-nano:
+        name: "GPT-5 Nano 💰"
+        input_price: 0.00005
+        output_price: 0.0004
+        context_window: 400000
         vision_capable: false
-        training_cutoff: "2023-10"
-
-      o1-mini:
-        name: "o1-mini"
-        input_price: 0.003     # $3.00 per 1M tokens
-        output_price: 0.012    # $12.00 per 1M tokens
-        context_window: 128000
-        vision_capable: false
-        training_cutoff: "2023-10"
-
-      # 레거시 모델
-      gpt-4-turbo:
-        name: "GPT-4 Turbo"
-        input_price: 0.01      # $10.00 per 1M tokens
-        output_price: 0.03     # $30.00 per 1M tokens
-        context_window: 128000
-        vision_capable: true
-        training_cutoff: "2023-12"
-
-      gpt-3.5-turbo:
-        name: "GPT-3.5 Turbo"
-        input_price: 0.0005    # $0.50 per 1M tokens
-        output_price: 0.0015   # $1.50 per 1M tokens
-        context_window: 16385
-        vision_capable: false
-        training_cutoff: "2021-09"
+        training_cutoff: "2025-01"
 
   anthropic:
     name: "Anthropic"
     website: "https://docs.anthropic.com/claude/docs/models-overview"
     api_endpoint: "https://api.anthropic.com/v1"
     models:
-      # 💎 프리미엄 모델
-      claude-3-opus:
-        name: "Claude 3 Opus 💎"
-        input_price: 0.015     # $15.00 per 1M tokens
-        output_price: 0.075    # $75.00 per 1M tokens
+      claude-4.1-opus:
+        name: "Claude 4.1 Opus 💎"
+        input_price: 0.02
+        output_price: 0.08
         context_window: 200000
         vision_capable: true
-        training_cutoff: "2023-08"
+        training_cutoff: "2025-09"
 
-      # 🔥 유행 모델 (2024-10-22 업데이트)
-      claude-3.5-sonnet:
-        name: "Claude 3.5 Sonnet 🔥"
-        input_price: 0.003     # $3.00 per 1M tokens
-        output_price: 0.015    # $15.00 per 1M tokens
+      claude-4.1-sonnet:
+        name: "Claude 4.1 Sonnet 🔥"
+        input_price: 0.005
+        output_price: 0.025
         context_window: 200000
         vision_capable: true
-        training_cutoff: "2024-10"
+        training_cutoff: "2025-09"
 
-      # 💰 가성비 모델 (2024-11 출시)
       claude-3.5-haiku:
         name: "Claude 3.5 Haiku 💰"
-        input_price: 0.0008    # $0.80 per 1M tokens
-        output_price: 0.004    # $4.00 per 1M tokens
+        input_price: 0.0008
+        output_price: 0.004
         context_window: 200000
         vision_capable: true
         training_cutoff: "2024-07"
 
-      # 레거시 모델
-      claude-3-haiku:
-        name: "Claude 3 Haiku"
-        input_price: 0.00025   # $0.25 per 1M tokens
-        output_price: 0.00125  # $1.25 per 1M tokens
-        context_window: 200000
-        vision_capable: true
-        training_cutoff: "2023-08"
-
   google:
     name: "Google"
-    website: "https://ai.google.dev/pricing"
+    website: "https://ai.google.dev/gemini-api/docs/pricing"
     api_endpoint: "https://generativelanguage.googleapis.com/v1"
     models:
-      # 🔥 유행 모델 (최신 실험 버전)
-      gemini-2.0-flash:
-        name: "Gemini 2.0 Flash 🔥"
-        input_price: 0.0          # FREE (experimental)
-        output_price: 0.0         # FREE (experimental)
-        context_window: 1000000   # 1M tokens
+      gemini-2.5-pro:
+        name: "Gemini 2.5 Pro 💎"
+        input_price: 0.00125        # $1.25 per 1M tokens (<=200k)
+        input_price_long: 0.0025    # $2.50 per 1M tokens (>200k)
+        output_price: 0.01          # $10.00 per 1M tokens (<=200k)
+        output_price_long: 0.015    # $15.00 per 1M tokens (>200k)
+        context_window: 200000
         vision_capable: true
-        training_cutoff: "2024-12"
+        training_cutoff: "2025-09"
 
-      # 💎 프리미엄 모델
-      gemini-1.5-pro:
-        name: "Gemini 1.5 Pro 💎"
-        input_price: 0.00125         # $1.25 per 1M tokens (<128K)
-        input_price_long: 0.0025     # $2.50 per 1M tokens (>128K)
-        output_price: 0.005          # $5.00 per 1M tokens (<128K)
-        output_price_long: 0.01      # $10.00 per 1M tokens (>128K)
-        context_window: 2000000      # 2M tokens
+      gemini-2.5-flash:
+        name: "Gemini 2.5 Flash 🔥"
+        input_price: 0.0003         # $0.30 per 1M tokens
+        output_price: 0.0025        # $2.50 per 1M tokens
+        context_window: 1000000
         vision_capable: true
-        training_cutoff: "2024-05"
+        training_cutoff: "2025-09"
 
-      # 💰 가성비 모델
-      gemini-1.5-flash:
-        name: "Gemini 1.5 Flash 💰"
-        input_price: 0.000075        # $0.075 per 1M tokens (<128K)
-        input_price_long: 0.00015    # $0.15 per 1M tokens (>128K)
-        output_price: 0.0003         # $0.30 per 1M tokens (<128K)
-        output_price_long: 0.0006    # $0.60 per 1M tokens (>128K)
-        context_window: 1000000      # 1M tokens
+      gemini-2.5-flash-lite:
+        name: "Gemini 2.5 Flash Lite 💰"
+        input_price: 0.0001         # $0.10 per 1M tokens
+        output_price: 0.0004        # $0.40 per 1M tokens
+        context_window: 1000000
         vision_capable: true
-        training_cutoff: "2024-05"
-
-      # 레거시 모델
-      gemini-1.0-pro:
-        name: "Gemini 1.0 Pro"
-        input_price: 0.0005          # $0.50 per 1M tokens
-        output_price: 0.0015         # $1.50 per 1M tokens
-        context_window: 32000
-        vision_capable: false
-        training_cutoff: "2023-11"
+        training_cutoff: "2025-09"
 
   perplexity:
     name: "Perplexity AI"
     website: "https://docs.perplexity.ai/docs/pricing"
     api_endpoint: "https://api.perplexity.ai"
     models:
-      # 💰 가성비 모델 (온라인 검색 포함)
-      llama-3.1-sonar-small:
-        name: "Llama 3.1 Sonar Small 💰"
-        input_price: 0.0002          # $0.20 per 1M tokens
-        output_price: 0.0002         # $0.20 per 1M tokens
+      sonar-base:
+        name: "Sonar Base 💰"
+        input_price: 0.0002
+        output_price: 0.0002
         context_window: 128000
         online_search: true
         training_cutoff: "2024-07"
 
-      # 🔥 유행 모델
-      llama-3.1-sonar-large:
-        name: "Llama 3.1 Sonar Large 🔥"
-        input_price: 0.001           # $1.00 per 1M tokens
-        output_price: 0.001          # $1.00 per 1M tokens
+      sonar-pro:
+        name: "Sonar Pro 🔥"
+        input_price: 0.0005
+        output_price: 0.002
         context_window: 128000
         online_search: true
         training_cutoff: "2024-07"
 
-      # 💎 프리미엄 모델
-      llama-3.1-sonar-huge:
-        name: "Llama 3.1 Sonar Huge 💎"
-        input_price: 0.005           # $5.00 per 1M tokens
-        output_price: 0.005          # $5.00 per 1M tokens
+      perplexity-max:
+        name: "Perplexity Max 💎"
+        input_price: 0.005
+        output_price: 0.005
         context_window: 128000
         online_search: true
-        training_cutoff: "2024-07"
+        training_cutoff: "2024-10"
 
   mistral:
     name: "Mistral AI"

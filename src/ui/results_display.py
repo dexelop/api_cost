@@ -22,6 +22,9 @@ def render_results(
     processed_files: List[ProcessedFile],
     selected_models: List[str],
     output_ratio: float,
+    exchange_rate: float = 1500.0,
+    output_mode: str = "page",
+    output_pages: int = 5,
 ):
     """
     결과 표시 UI 렌더링
@@ -30,6 +33,9 @@ def render_results(
         processed_files: 처리된 파일 리스트
         selected_models: 선택된 모델 ID 리스트
         output_ratio: 출력 토큰 비율
+        exchange_rate: USD to KRW 환율
+        output_mode: 출력 계산 모드 ("ratio" or "page")
+        output_pages: 페이지 수 (output_mode가 "page"일 때 사용)
     """
     if not processed_files:
         st.info("📂 파일을 업로드해주세요.")
@@ -60,6 +66,12 @@ def render_results(
             }
         )
 
+    # 출력 토큰 계산
+    if output_mode == "page":
+        estimated_output = output_pages * 500  # 1페이지 = 500토큰
+    else:
+        estimated_output = int(total_tokens * output_ratio)
+
     # 토큰 정보 표시
     st.subheader("📊 토큰 분석")
 
@@ -67,8 +79,10 @@ def render_results(
     with col1:
         st.metric("총 입력 토큰", f"{total_tokens:,}")
     with col2:
-        estimated_output = int(total_tokens * output_ratio)
-        st.metric("예상 출력 토큰", f"{estimated_output:,}")
+        if output_mode == "page":
+            st.metric("예상 출력 토큰", f"{estimated_output:,}", f"({output_pages}페이지)")
+        else:
+            st.metric("예상 출력 토큰", f"{estimated_output:,}", f"(비율 {output_ratio:.1f}x)")
     with col3:
         st.metric("총 토큰", f"{total_tokens + estimated_output:,}")
 
@@ -83,8 +97,7 @@ def render_results(
     # 모델별 비용 계산
     st.subheader("💰 모델별 비용 비교")
 
-    # 비용 추정
-    estimated_output = int(total_tokens * output_ratio)
+    # 비용 추정 (이미 위에서 계산된 estimated_output 사용)
     estimates = calculator.compare_models(
         selected_models, input_tokens=total_tokens, output_tokens=estimated_output
     )
@@ -96,13 +109,15 @@ def render_results(
     # 결과 테이블 생성
     result_data = []
     for est in estimates:
+        total_cost_krw = est.total_cost * exchange_rate
         result_data.append(
             {
                 "모델": est.model.model_name,
                 "제공업체": est.model.provider.upper(),
                 "입력 비용": f"${est.input_cost:.6f}",
                 "출력 비용": f"${est.output_cost:.6f}",
-                "총 비용": f"${est.total_cost:.6f}",
+                "총 비용 (USD)": f"${est.total_cost:.6f}",
+                "총 비용 (KRW)": f"₩{total_cost_krw:.2f}",
                 "Context 윈도우": f"{est.model.context_window:,}",
             }
         )
@@ -118,9 +133,10 @@ def render_results(
 
     # 가장 저렴한 모델 강조
     cheapest = estimates[0]
+    cheapest_krw = cheapest.total_cost * exchange_rate
     st.success(
         f"💡 **가장 저렴한 모델**: {cheapest.model.model_name} "
-        f"(${cheapest.total_cost:.6f})"
+        f"(${cheapest.total_cost:.6f} / ₩{cheapest_krw:.2f})"
     )
 
     # 내보내기
