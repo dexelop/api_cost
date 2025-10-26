@@ -1,0 +1,177 @@
+"""
+결과 표시 UI 컴포넌트
+
+토큰 수와 비용 추정 결과를 표시합니다.
+"""
+
+from typing import List
+
+import pandas as pd
+import streamlit as st
+
+from src.processors.base import ProcessedFile
+from src.pricing.calculator import PriceCalculator
+from src.tokenizers.file_tokenizer import FileTokenizer
+
+
+def render_results(
+    processed_files: List[ProcessedFile],
+    selected_models: List[str],
+    output_ratio: float,
+):
+    """
+    결과 표시 UI 렌더링
+
+    Args:
+        processed_files: 처리된 파일 리스트
+        selected_models: 선택된 모델 ID 리스트
+        output_ratio: 출력 토큰 비율
+    """
+    if not processed_files:
+        st.info("📂 파일을 업로드해주세요.")
+        return
+
+    if not selected_models:
+        st.warning("⚠️ 모델을 선택해주세요.")
+        return
+
+    # 토큰 계산기 및 가격 계산기 초기화
+    tokenizer = FileTokenizer()
+    calculator = PriceCalculator()
+
+    # 전체 토큰 수 계산
+    total_tokens = 0
+    file_token_details = []
+
+    for pfile in processed_files:
+        # 파일별 토큰 수 계산
+        token_count = tokenizer.count_tokens_from_processed(pfile)
+        total_tokens += token_count.total_tokens
+
+        file_token_details.append(
+            {
+                "파일명": pfile.metadata.get("file_name", "Unknown"),
+                "타입": pfile.file_type,
+                "토큰 수": f"{token_count.total_tokens:,}",
+            }
+        )
+
+    # 토큰 정보 표시
+    st.subheader("📊 토큰 분석")
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("총 입력 토큰", f"{total_tokens:,}")
+    with col2:
+        estimated_output = int(total_tokens * output_ratio)
+        st.metric("예상 출력 토큰", f"{estimated_output:,}")
+    with col3:
+        st.metric("총 토큰", f"{total_tokens + estimated_output:,}")
+
+    # 파일별 토큰 수 표시
+    if len(processed_files) > 1:
+        with st.expander("📋 파일별 토큰 수"):
+            df_files = pd.DataFrame(file_token_details)
+            st.dataframe(df_files, use_container_width=True)
+
+    st.divider()
+
+    # 모델별 비용 계산
+    st.subheader("💰 모델별 비용 비교")
+
+    # 비용 추정
+    estimated_output = int(total_tokens * output_ratio)
+    estimates = calculator.compare_models(
+        selected_models, input_tokens=total_tokens, output_tokens=estimated_output
+    )
+
+    if not estimates:
+        st.error("❌ 선택된 모델의 비용을 계산할 수 없습니다.")
+        return
+
+    # 결과 테이블 생성
+    result_data = []
+    for est in estimates:
+        result_data.append(
+            {
+                "모델": est.model.model_name,
+                "제공업체": est.model.provider.upper(),
+                "입력 비용": f"${est.input_cost:.6f}",
+                "출력 비용": f"${est.output_cost:.6f}",
+                "총 비용": f"${est.total_cost:.6f}",
+                "Context 윈도우": f"{est.model.context_window:,}",
+            }
+        )
+
+    df_results = pd.DataFrame(result_data)
+
+    # 결과 테이블 표시
+    st.dataframe(
+        df_results,
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    # 가장 저렴한 모델 강조
+    cheapest = estimates[0]
+    st.success(
+        f"💡 **가장 저렴한 모델**: {cheapest.model.model_name} "
+        f"(${cheapest.total_cost:.6f})"
+    )
+
+    st.divider()
+
+    # 시각화
+    st.subheader("📈 비용 시각화")
+
+    # 차트 데이터 준비
+    chart_data = pd.DataFrame(
+        {
+            "모델": [est.model.model_name for est in estimates],
+            "총 비용 (USD)": [est.total_cost for est in estimates],
+            "입력 비용 (USD)": [est.input_cost for est in estimates],
+            "출력 비용 (USD)": [est.output_cost for est in estimates],
+        }
+    )
+
+    # 총 비용 막대 그래프
+    st.bar_chart(chart_data.set_index("모델")["총 비용 (USD)"])
+
+    # 입력/출력 비용 분해
+    with st.expander("📊 입력/출력 비용 분해"):
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.write("**입력 비용**")
+            st.bar_chart(chart_data.set_index("모델")["입력 비용 (USD)"])
+
+        with col2:
+            st.write("**출력 비용**")
+            st.bar_chart(chart_data.set_index("모델")["출력 비용 (USD)"])
+
+    # 상세 정보 표시
+    with st.expander("🔍 상세 정보"):
+        for est in estimates:
+            st.markdown(f"### {est.model.model_name}")
+            st.write(f"**제공업체**: {est.model.provider}")
+            st.write(f"**입력 토큰**: {est.input_tokens:,}")
+            st.write(f"**출력 토큰**: {est.output_tokens:,}")
+            st.write(f"**입력 가격**: ${est.model.input_price:.4f} per 1K tokens")
+            st.write(f"**출력 가격**: ${est.model.output_price:.4f} per 1K tokens")
+            st.write(f"**입력 비용**: ${est.input_cost:.6f}")
+            st.write(f"**출력 비용**: ${est.output_cost:.6f}")
+            st.write(f"**총 비용**: ${est.total_cost:.6f}")
+
+            # 추가 기능
+            features = []
+            if est.model.vision_capable:
+                features.append("👁️ Vision 지원")
+            if est.model.online_search:
+                features.append("🌐 온라인 검색 지원")
+            if est.model.input_price_long:
+                features.append("📄 장문 가격 지원")
+
+            if features:
+                st.write("**기능**: " + ", ".join(features))
+
+            st.divider()
