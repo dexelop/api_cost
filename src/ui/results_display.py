@@ -49,14 +49,14 @@ def render_results(
 
     for pfile in processed_files:
         # 파일별 토큰 수 계산
-        token_count = tokenizer.count_tokens_from_processed(pfile)
-        total_tokens += token_count.total_tokens
+        token_count = tokenizer.count_tokens_from_processed_file(pfile)
+        total_tokens += token_count.token_count
 
         file_token_details.append(
             {
                 "파일명": pfile.metadata.get("file_name", "Unknown"),
                 "타입": pfile.file_type,
-                "토큰 수": f"{token_count.total_tokens:,}",
+                "토큰 수": f"{token_count.token_count:,}",
             }
         )
 

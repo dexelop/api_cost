@@ -55,7 +55,7 @@ def render_file_uploader() -> List[ProcessedFile]:
     # 파일 업로드
     uploaded_files = st.file_uploader(
         "파일 선택",
-        type=["txt", "md", "pdf", "docx", "xlsx", "csv", "png", "jpg", "jpeg"],
+        type=["txt", "md", "pdf", "docx", "xlsx", "xls", "csv", "json", "png", "jpg", "jpeg"],
         accept_multiple_files=True,
         help=f"최대 {settings.MAX_FILES_COUNT}개 파일, 파일당 최대 {settings.MAX_FILE_SIZE_MB}MB",
     )

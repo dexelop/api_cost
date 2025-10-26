@@ -35,7 +35,7 @@ def main():
         st.session_state.processed_files = []
 
     if "selected_models" not in st.session_state:
-        st.session_state.selected_models = ["gpt-4o", "claude-3.5-sonnet", "gemini-1.5-pro"]
+        st.session_state.selected_models = ["gpt-4o", "claude-3.5-sonnet", "gemini-2.0-flash"]
 
     if "output_ratio" not in st.session_state:
         st.session_state.output_ratio = 0.3  # 출력 토큰 비율 (입력의 30%)

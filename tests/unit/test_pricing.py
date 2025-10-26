@@ -30,41 +30,41 @@ class TestPriceCalculator:
         calculator = PriceCalculator()
 
         # 짧은 키로 조회
-        gpt4 = calculator.get_model_pricing("gpt-4")
-        assert gpt4 is not None
-        assert gpt4.model_id == "gpt-4"
-        assert gpt4.provider == "openai"
-        assert gpt4.input_price > 0
-        assert gpt4.output_price > 0
+        gpt4o = calculator.get_model_pricing("gpt-4o")
+        assert gpt4o is not None
+        assert gpt4o.model_id == "gpt-4o"
+        assert gpt4o.provider == "openai"
+        assert gpt4o.input_price > 0
+        assert gpt4o.output_price > 0
 
         # 긴 키로 조회
-        gpt4_long = calculator.get_model_pricing("openai:gpt-4")
-        assert gpt4_long is not None
-        assert gpt4_long.model_id == "gpt-4"
+        gpt4o_long = calculator.get_model_pricing("openai:gpt-4o")
+        assert gpt4o_long is not None
+        assert gpt4o_long.model_id == "gpt-4o"
 
     def test_calculate_cost_input_only(self):
         """입력 토큰만 있는 비용 계산 테스트"""
         calculator = PriceCalculator()
 
-        # GPT-4: $0.03 per 1K input tokens
-        estimate = calculator.calculate_cost("gpt-4", input_tokens=1000)
+        # GPT-4o: $0.0025 per 1K input tokens
+        estimate = calculator.calculate_cost("gpt-4o", input_tokens=1000)
 
         assert estimate.input_tokens == 1000
         assert estimate.output_tokens == 0
-        assert estimate.input_cost == 0.03  # 1000 * 0.03 / 1000
+        assert estimate.input_cost == 0.0025  # 1000 * 0.0025 / 1000
         assert estimate.output_cost == 0.0
-        assert estimate.total_cost == 0.03
+        assert estimate.total_cost == 0.0025
 
     def test_calculate_cost_with_output(self):
         """입력 + 출력 토큰 비용 계산 테스트"""
         calculator = PriceCalculator()
 
-        # GPT-4: $0.03 input, $0.06 output per 1K
-        estimate = calculator.calculate_cost("gpt-4", input_tokens=1000, output_tokens=500)
+        # GPT-4o: $0.0025 input, $0.01 output per 1K
+        estimate = calculator.calculate_cost("gpt-4o", input_tokens=1000, output_tokens=500)
 
-        assert estimate.input_cost == 0.03
-        assert estimate.output_cost == 0.03  # 500 * 0.06 / 1000
-        assert estimate.total_cost == 0.06
+        assert estimate.input_cost == 0.0025
+        assert estimate.output_cost == 0.005  # 500 * 0.01 / 1000
+        assert estimate.total_cost == 0.0075
 
     def test_calculate_cost_gemini_long(self):
         """Gemini 장문 가격 테스트"""
@@ -85,7 +85,7 @@ class TestPriceCalculator:
         """여러 모델 비용 비교 테스트"""
         calculator = PriceCalculator()
 
-        models = ["gpt-4", "gpt-4o-mini", "claude-3-haiku"]
+        models = ["gpt-4o", "gpt-4o-mini", "claude-3.5-haiku"]
         estimates = calculator.compare_models(models, input_tokens=1000, output_tokens=500)
 
         # 3개 모델 모두 결과 반환
@@ -95,9 +95,9 @@ class TestPriceCalculator:
         for i in range(len(estimates) - 1):
             assert estimates[i].total_cost <= estimates[i + 1].total_cost
 
-        # 가장 저렴한 모델 확인 (대체로 gpt-4o-mini 또는 claude-3-haiku)
+        # 가장 저렴한 모델 확인 (대체로 gpt-4o-mini 또는 claude-3.5-haiku)
         cheapest = estimates[0]
-        assert cheapest.model.model_id in ["gpt-4o-mini", "claude-3-haiku"]
+        assert cheapest.model.model_id in ["gpt-4o-mini", "claude-3.5-haiku"]
 
     def test_get_all_models(self):
         """모든 모델 정보 조회 테스트"""
@@ -143,7 +143,7 @@ class TestPriceCalculator:
         """CostEstimate to_dict 메서드 테스트"""
         calculator = PriceCalculator()
 
-        estimate = calculator.calculate_cost("gpt-4", input_tokens=1000, output_tokens=500)
+        estimate = calculator.calculate_cost("gpt-4o", input_tokens=1000, output_tokens=500)
         result_dict = estimate.to_dict()
 
         assert "provider" in result_dict

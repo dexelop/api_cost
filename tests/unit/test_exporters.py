@@ -61,7 +61,7 @@ class TestCSVExporter:
         calculator = PriceCalculator()
 
         # 비용 계산
-        estimate = calculator.calculate_cost("gpt-4", input_tokens=1000, output_tokens=500)
+        estimate = calculator.calculate_cost("gpt-4o", input_tokens=1000, output_tokens=500)
 
         # CSV 내보내기
         csv_output = exporter.export_cost_estimates([estimate], output_ratio=0.5)

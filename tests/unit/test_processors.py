@@ -167,6 +167,65 @@ class TestBaseFileProcessor:
         assert metadata["extension"] == ".txt"
 
 
+class TestExcelFileProcessor:
+    """ExcelFileProcessor에 대한 테스트"""
+
+    def test_supported_extensions(self):
+        """지원하는 파일 확장자 확인"""
+        from src.processors.excel_processor import ExcelFileProcessor
+
+        processor = ExcelFileProcessor()
+
+        assert processor.is_supported(Path("test.xlsx"))
+        assert processor.is_supported(Path("test.xls"))
+        assert processor.is_supported(Path("test.csv"))
+        assert not processor.is_supported(Path("test.txt"))
+
+    def test_process_csv_file(self, tmp_path):
+        """CSV 파일 처리 테스트"""
+        from src.processors.excel_processor import ExcelFileProcessor
+
+        # CSV 파일 생성
+        csv_file = tmp_path / "test.csv"
+        csv_content = "Name,Age,City\nJohn,25,Seoul\nJane,30,Busan\n한글,40,대구"
+        csv_file.write_text(csv_content, encoding="utf-8")
+
+        processor = ExcelFileProcessor()
+        result = processor.process(csv_file)
+
+        assert result.is_success
+        assert result.file_type == "excel"
+        assert len(result.content) > 0
+        assert "John" in result.content
+        assert "한글" in result.content
+
+    def test_process_excel_file(self, tmp_path):
+        """Excel 파일 처리 테스트"""
+        from src.processors.excel_processor import ExcelFileProcessor
+        from openpyxl import Workbook
+
+        # Excel 파일 생성
+        excel_file = tmp_path / "test.xlsx"
+        wb = Workbook()
+        ws = wb.active
+        ws["A1"] = "Name"
+        ws["B1"] = "Value"
+        ws["A2"] = "Test"
+        ws["B2"] = 100
+        ws["A3"] = "한글"
+        ws["B3"] = 200
+        wb.save(excel_file)
+
+        processor = ExcelFileProcessor()
+        result = processor.process(excel_file)
+
+        assert result.is_success
+        assert result.file_type == "excel"
+        assert "Test" in result.content
+        assert "한글" in result.content
+        assert "100" in result.content
+
+
 class TestProcessorIntegration:
     """프로세서 통합 테스트"""
 
