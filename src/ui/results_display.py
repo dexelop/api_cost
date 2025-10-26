@@ -5,6 +5,7 @@
 """
 
 from typing import List
+from datetime import datetime
 
 import pandas as pd
 import streamlit as st
@@ -12,6 +13,7 @@ import streamlit as st
 from src.processors.base import ProcessedFile
 from src.pricing.calculator import PriceCalculator
 from src.tokenizers.file_tokenizer import FileTokenizer
+from src.exporters.csv_exporter import CSVExporter
 
 
 def render_results(
@@ -118,6 +120,48 @@ def render_results(
         f"💡 **가장 저렴한 모델**: {cheapest.model.model_name} "
         f"(${cheapest.total_cost:.6f})"
     )
+
+    # CSV 내보내기
+    st.divider()
+    st.subheader("📥 결과 내보내기")
+
+    exporter = CSVExporter()
+
+    # 3개의 다운로드 옵션
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        # 파일별 토큰 정보 CSV
+        csv_files = exporter.export_file_tokens(processed_files)
+        st.download_button(
+            label="📄 파일 토큰 정보",
+            data=csv_files,
+            file_name=f"file_tokens_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+            mime="text/csv",
+            help="파일별 토큰 수 정보를 CSV로 다운로드",
+        )
+
+    with col2:
+        # 모델별 비용 비교 CSV
+        csv_costs = exporter.export_cost_estimates(estimates, output_ratio)
+        st.download_button(
+            label="💰 비용 비교",
+            data=csv_costs,
+            file_name=f"cost_comparison_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+            mime="text/csv",
+            help="모델별 비용 비교 정보를 CSV로 다운로드",
+        )
+
+    with col3:
+        # 통합 CSV
+        csv_combined = exporter.export_combined(processed_files, estimates, output_ratio)
+        st.download_button(
+            label="📊 전체 리포트",
+            data=csv_combined,
+            file_name=f"full_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+            mime="text/csv",
+            help="모든 정보를 포함한 통합 리포트를 CSV로 다운로드",
+        )
 
     st.divider()
 
