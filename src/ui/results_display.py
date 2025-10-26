@@ -14,6 +14,8 @@ from src.processors.base import ProcessedFile
 from src.pricing.calculator import PriceCalculator
 from src.tokenizers.file_tokenizer import FileTokenizer
 from src.exporters.csv_exporter import CSVExporter
+from src.exporters.excel_exporter import ExcelExporter
+from src.exporters.json_exporter import JSONExporter
 
 
 def render_results(
@@ -121,18 +123,21 @@ def render_results(
         f"(${cheapest.total_cost:.6f})"
     )
 
-    # CSV 내보내기
+    # 내보내기
     st.divider()
     st.subheader("📥 결과 내보내기")
 
-    exporter = CSVExporter()
+    csv_exporter = CSVExporter()
+    excel_exporter = ExcelExporter()
+    json_exporter = JSONExporter()
 
-    # 3개의 다운로드 옵션
+    # CSV 다운로드 (1행)
+    st.markdown("**CSV 형식**")
     col1, col2, col3 = st.columns(3)
 
     with col1:
         # 파일별 토큰 정보 CSV
-        csv_files = exporter.export_file_tokens(processed_files)
+        csv_files = csv_exporter.export_file_tokens(processed_files)
         st.download_button(
             label="📄 파일 토큰 정보",
             data=csv_files,
@@ -143,7 +148,7 @@ def render_results(
 
     with col2:
         # 모델별 비용 비교 CSV
-        csv_costs = exporter.export_cost_estimates(estimates, output_ratio)
+        csv_costs = csv_exporter.export_cost_estimates(estimates, output_ratio)
         st.download_button(
             label="💰 비용 비교",
             data=csv_costs,
@@ -154,13 +159,39 @@ def render_results(
 
     with col3:
         # 통합 CSV
-        csv_combined = exporter.export_combined(processed_files, estimates, output_ratio)
+        csv_combined = csv_exporter.export_combined(processed_files, estimates, output_ratio)
         st.download_button(
-            label="📊 전체 리포트",
+            label="📊 전체 리포트 (CSV)",
             data=csv_combined,
             file_name=f"full_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
             mime="text/csv",
             help="모든 정보를 포함한 통합 리포트를 CSV로 다운로드",
+        )
+
+    # Excel & JSON 다운로드 (2행)
+    st.markdown("**Excel & JSON 형식**")
+    col4, col5, col6 = st.columns(3)
+
+    with col4:
+        # Excel 워크북
+        excel_data = excel_exporter.export_workbook(processed_files, estimates, output_ratio)
+        st.download_button(
+            label="📊 Excel 워크북",
+            data=excel_data,
+            file_name=f"llm_cost_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            help="요약, 파일 정보, 비용 비교 시트를 포함한 Excel 워크북",
+        )
+
+    with col5:
+        # JSON 데이터
+        json_data = json_exporter.export_json(processed_files, estimates, output_ratio)
+        st.download_button(
+            label="🔧 JSON 데이터",
+            data=json_data,
+            file_name=f"llm_cost_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+            mime="application/json",
+            help="구조화된 JSON 형식으로 모든 데이터 내보내기",
         )
 
     st.divider()

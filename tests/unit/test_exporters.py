@@ -10,6 +10,8 @@ import pytest
 import pandas as pd
 
 from src.exporters.csv_exporter import CSVExporter
+from src.exporters.excel_exporter import ExcelExporter
+from src.exporters.json_exporter import JSONExporter
 from src.processors.base import ProcessedFile
 from src.pricing.calculator import PriceCalculator
 
@@ -234,3 +236,218 @@ class TestCSVExporter:
         csv_bytes = exporter.to_bytes(csv_output)
         decoded = csv_bytes.decode("utf-8-sig")
         assert "테스트.txt" in decoded
+
+
+class TestExcelExporter:
+    """ExcelExporter에 대한 테스트"""
+
+    def test_export_workbook(self, tmp_path):
+        """Excel 워크북 내보내기 테스트"""
+        exporter = ExcelExporter()
+        calculator = PriceCalculator()
+
+        # 테스트 파일
+        test_file = ProcessedFile(
+            file_path=tmp_path / "test.txt",
+            file_type="text",
+            content="Test content for Excel export",
+            metadata={"file_name": "test.txt", "file_size_mb": 0.001},
+        )
+
+        # 비용 계산
+        estimates = calculator.compare_models(
+            ["gpt-4o-mini", "claude-3-haiku"], input_tokens=1000, output_tokens=500
+        )
+
+        # Excel 내보내기
+        excel_bytes = exporter.export_workbook([test_file], estimates, output_ratio=0.5)
+
+        # bytes 타입 확인
+        assert isinstance(excel_bytes, bytes)
+        assert len(excel_bytes) > 0
+
+        # Excel 파일 구조 확인 (openpyxl로 읽기)
+        from openpyxl import load_workbook
+        import io
+
+        wb = load_workbook(io.BytesIO(excel_bytes))
+
+        # 시트 확인
+        assert "요약" in wb.sheetnames
+        assert "파일 정보" in wb.sheetnames
+        assert "비용 비교" in wb.sheetnames
+
+    def test_excel_summary_sheet(self, tmp_path):
+        """Excel 요약 시트 내용 확인"""
+        exporter = ExcelExporter()
+        calculator = PriceCalculator()
+
+        test_file = ProcessedFile(
+            file_path=tmp_path / "test.txt",
+            file_type="text",
+            content="Test content",
+            metadata={"file_name": "test.txt", "file_size_mb": 0.001},
+        )
+
+        estimate = calculator.calculate_cost("gpt-4o-mini", input_tokens=1000)
+        excel_bytes = exporter.export_workbook([test_file], [estimate], output_ratio=0.3)
+
+        from openpyxl import load_workbook
+        import io
+
+        wb = load_workbook(io.BytesIO(excel_bytes))
+        ws = wb["요약"]
+
+        # 타이틀 확인
+        assert ws["A1"].value == "LLM API Cost Calculator"
+
+    def test_excel_files_sheet(self, tmp_path):
+        """Excel 파일 정보 시트 내용 확인"""
+        exporter = ExcelExporter()
+
+        test_file = ProcessedFile(
+            file_path=tmp_path / "test.txt",
+            file_type="text",
+            content="Test",
+            metadata={"file_name": "test.txt", "file_size_mb": 0.001},
+        )
+
+        # 빈 estimates로 워크북 생성
+        excel_bytes = exporter.export_workbook([test_file], [], output_ratio=0.3)
+
+        from openpyxl import load_workbook
+        import io
+
+        wb = load_workbook(io.BytesIO(excel_bytes))
+        ws = wb["파일 정보"]
+
+        # 헤더 확인
+        assert ws["A1"].value == "파일명"
+        assert ws["B1"].value == "파일 타입"
+        assert ws["C1"].value == "파일 크기 (MB)"
+
+        # 데이터 확인
+        assert ws["A2"].value == "test.txt"
+        assert ws["B2"].value == "text"
+
+
+class TestJSONExporter:
+    """JSONExporter에 대한 테스트"""
+
+    def test_export_json(self, tmp_path):
+        """JSON 내보내기 테스트"""
+        exporter = JSONExporter()
+        calculator = PriceCalculator()
+
+        # 테스트 파일
+        test_file = ProcessedFile(
+            file_path=tmp_path / "test.txt",
+            file_type="text",
+            content="Test content for JSON export",
+            metadata={"file_name": "test.txt", "file_size_mb": 0.001},
+        )
+
+        # 비용 계산
+        estimates = calculator.compare_models(
+            ["gpt-4o-mini", "claude-3-haiku"], input_tokens=1000, output_tokens=500
+        )
+
+        # JSON 내보내기
+        json_output = exporter.export_json([test_file], estimates, output_ratio=0.5)
+
+        # JSON 문자열 확인
+        assert isinstance(json_output, str)
+        assert len(json_output) > 0
+
+        # JSON 파싱 가능 확인
+        import json
+
+        data = json.loads(json_output)
+
+        # 구조 확인
+        assert "metadata" in data
+        assert "files" in data
+        assert "tokens" in data
+        assert "costs" in data
+
+    def test_json_structure(self, tmp_path):
+        """JSON 데이터 구조 확인"""
+        exporter = JSONExporter()
+        calculator = PriceCalculator()
+
+        test_file = ProcessedFile(
+            file_path=tmp_path / "test.txt",
+            file_type="text",
+            content="Test",
+            metadata={"file_name": "test.txt", "file_size_mb": 0.001},
+        )
+
+        estimate = calculator.calculate_cost("gpt-4o-mini", input_tokens=1000, output_tokens=500)
+        json_output = exporter.export_json([test_file], [estimate], output_ratio=0.5)
+
+        import json
+
+        data = json.loads(json_output)
+
+        # 메타데이터 확인
+        assert data["metadata"]["tool"] == "LLM API Cost Calculator"
+        assert "generated_at" in data["metadata"]
+
+        # 파일 정보 확인
+        assert data["files"]["count"] == 1
+        assert len(data["files"]["items"]) == 1
+        assert data["files"]["items"][0]["file_name"] == "test.txt"
+
+        # 토큰 정보 확인
+        assert "total_input_tokens" in data["tokens"]
+        assert "estimated_output_tokens" in data["tokens"]
+        assert data["tokens"]["output_ratio"] == 0.5
+
+        # 비용 정보 확인
+        assert data["costs"]["models_compared"] == 1
+        assert "cheapest_model" in data["costs"]
+        assert len(data["costs"]["all_models"]) == 1
+
+    def test_json_with_image_file(self, tmp_path):
+        """이미지 파일 JSON 내보내기 테스트"""
+        exporter = JSONExporter()
+
+        # 이미지 파일 (메타데이터 포함)
+        test_file = ProcessedFile(
+            file_path=tmp_path / "image.png",
+            file_type="image",
+            content="",
+            metadata={
+                "file_name": "image.png",
+                "file_size_mb": 1.5,
+                "width": 1024,
+                "height": 768,
+            },
+        )
+
+        json_output = exporter.export_json([test_file], [], output_ratio=0.3)
+
+        import json
+
+        data = json.loads(json_output)
+
+        # 이미지 토큰 정보 포함 확인
+        file_item = data["files"]["items"][0]
+        assert file_item["file_type"] == "image"
+        # image_tokens 필드가 있어야 함
+        assert "image_tokens" in file_item
+
+    def test_json_to_bytes(self):
+        """JSON 바이트 변환 테스트"""
+        exporter = JSONExporter()
+
+        json_string = '{"test": "data", "korean": "한글"}'
+        json_bytes = exporter.to_bytes(json_string)
+
+        # bytes 타입 확인
+        assert isinstance(json_bytes, bytes)
+
+        # 디코딩 가능 확인
+        decoded = json_bytes.decode("utf-8")
+        assert decoded == json_string
+        assert "한글" in decoded
