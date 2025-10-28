@@ -1,150 +1,95 @@
 """
-LLM API Cost Calculator - Streamlit 메인 앱
+LLM API Cost Calculator - 홈 페이지
 
-파일을 업로드하고 다양한 LLM 모델의 API 비용을 계산하고 비교하는 웹 애플리케이션
+LLM API 비용 계산기의 메인 홈 페이지
 """
 
 import streamlit as st
 
-from src.ui.file_uploader import render_file_uploader
-from src.ui.model_selector import render_model_selector
-from src.ui.results_display import render_results
+# 페이지 설정
+st.set_page_config(
+    page_title="LLM API Cost Calculator",
+    page_icon="🧮",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 
+# 타이틀
+st.title("🧮 LLM API Cost Calculator")
+st.markdown("### LLM API 비용을 빠르고 쉽게 계산하고 비교하세요")
 
-def main():
-    """메인 애플리케이션 함수"""
+st.divider()
 
-    # 페이지 설정
-    st.set_page_config(
-        page_title="LLM API Cost Calculator",
-        page_icon="🧮",
-        layout="wide",
-        initial_sidebar_state="expanded",
-    )
+# 소개
+st.header("📌 개요")
+st.markdown(
+    """
+    **LLM API Cost Calculator**는 다양한 LLM 모델의 API 사용 비용을 계산하고 비교하는 도구입니다.
 
-    # 타이틀
-    st.title("🧮 LLM API Cost Calculator")
+    파일을 업로드하면 자동으로 토큰 수를 계산하고, 여러 모델의 예상 비용을 한눈에 비교할 수 있습니다.
+    """
+)
+
+# 주요 기능
+st.header("✨ 주요 기능")
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.subheader("📁 다양한 파일 지원")
     st.markdown(
         """
-        파일을 업로드하고 다양한 LLM 모델의 예상 API 비용을 비교해보세요.
+        - 텍스트 파일 (.txt, .md, .py, .js 등)
+        - PDF 문서
+        - Word 문서 (.docx)
+        - Excel 스프레드시트 (.xlsx, .xls, .csv)
+        - JSON 데이터
+        - 이미지 파일 (.png, .jpg, .jpeg)
         """
     )
 
-    # 세션 스테이트 초기화
-    if "processed_files" not in st.session_state:
-        st.session_state.processed_files = []
+with col2:
+    st.subheader("🤖 최신 LLM 모델")
+    st.markdown(
+        """
+        - **OpenAI**: GPT-5, GPT-5 Mini, GPT-5 Nano
+        - **Anthropic**: Claude 4.1 Opus/Sonnet/Haiku
+        - **Google**: Gemini 2.5 Pro/Flash/Flash Lite
+        - **Perplexity**: Sonar Base/Pro, Perplexity Max
+        """
+    )
 
-    if "selected_models" not in st.session_state:
-        # 4개 서비스(OpenAI, Anthropic, Google, Perplexity)의 모든 모델 기본 선택
-        st.session_state.selected_models = [
-            # OpenAI
-            "gpt-5", "gpt-5-mini", "gpt-5-nano",
-            # Anthropic
-            "claude-4.1-opus", "claude-4.1-sonnet", "claude-3.5-haiku",
-            # Google
-            "gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite",
-            # Perplexity
-            "sonar-base", "sonar-pro", "perplexity-max",
-        ]
+with col3:
+    st.subheader("💰 비용 비교 & 분석")
+    st.markdown(
+        """
+        - 실시간 토큰 계산
+        - 모델별 비용 비교
+        - USD/KRW 환율 지원
+        - 페이지 기반 출력 예측
+        - CSV/Excel/JSON 내보내기
+        """
+    )
 
-    if "output_ratio" not in st.session_state:
-        st.session_state.output_ratio = 0.3  # 출력 토큰 비율 (입력의 30%)
+st.divider()
 
-    if "exchange_rate" not in st.session_state:
-        st.session_state.exchange_rate = 1500.0  # USD to KRW 환율
+# 사용 방법
+st.header("🚀 사용 방법")
+st.markdown(
+    """
+    1. **좌측 사이드바**에서 **apiCost** 페이지로 이동
+    2. 비용을 계산할 **파일을 업로드**
+    3. 비교하고 싶은 **LLM 모델을 선택**
+    4. 출력 토큰 설정 (페이지 기반 또는 비율 기반)
+    5. 환율 설정 (기본: 1,500 KRW/USD)
+    6. **결과 확인** 및 내보내기
+    """
+)
 
-    if "output_mode" not in st.session_state:
-        st.session_state.output_mode = "page"  # "ratio" or "page"
+# 시작하기 버튼
+st.divider()
+st.markdown("### 👈 좌측 사이드바에서 **apiCost** 페이지로 이동하여 시작하세요!")
 
-    if "output_pages" not in st.session_state:
-        st.session_state.output_pages = 5  # 페이지 수 (약 500 토큰/페이지)
-
-    # 레이아웃: 사이드바 + 메인
-    with st.sidebar:
-        st.header("⚙️ 설정")
-
-        # 모델 선택
-        st.subheader("🤖 모델 선택")
-        selected_models = render_model_selector()
-        st.session_state.selected_models = selected_models
-
-        # 출력 토큰 설정
-        st.subheader("📊 출력 토큰 설정")
-        output_mode = st.radio(
-            "출력 계산 방식",
-            options=["page", "ratio"],
-            format_func=lambda x: "📄 페이지 기반" if x == "page" else "📊 비율 기반",
-            horizontal=True,
-        )
-        st.session_state.output_mode = output_mode
-
-        if output_mode == "page":
-            output_pages = st.number_input(
-                "예상 출력 페이지 수",
-                min_value=1,
-                max_value=50,
-                value=st.session_state.output_pages,
-                step=1,
-                help="1페이지 = 약 500 토큰 (보고서 기준)",
-            )
-            st.session_state.output_pages = output_pages
-            st.caption(f"💡 예상 출력: 약 {output_pages * 500:,} 토큰")
-        else:
-            output_ratio = st.slider(
-                "입력 토큰 대비 출력 토큰 비율",
-                min_value=0.0,
-                max_value=2.0,
-                value=st.session_state.output_ratio,
-                step=0.1,
-                help="예상 출력 토큰 수 = 입력 토큰 수 × 비율",
-            )
-            st.session_state.output_ratio = output_ratio
-
-        # 환율 설정
-        st.subheader("💱 환율 설정")
-        exchange_rate = st.number_input(
-            "USD → KRW 환율",
-            min_value=1.0,
-            max_value=10000.0,
-            value=st.session_state.exchange_rate,
-            step=10.0,
-            help="달러를 원화로 환산할 환율",
-        )
-        st.session_state.exchange_rate = exchange_rate
-
-        # 정보
-        st.divider()
-        st.caption("💡 Tip: 여러 파일을 동시에 업로드할 수 있습니다.")
-        st.caption("📊 선택한 모델들의 비용을 자동으로 비교합니다.")
-
-    # 메인 영역
-    col1, col2 = st.columns([1, 2])
-
-    with col1:
-        # 파일 업로더
-        st.header("📁 파일 업로드")
-        processed_files = render_file_uploader()
-
-        if processed_files:
-            st.session_state.processed_files = processed_files
-            st.success(f"✅ {len(processed_files)}개 파일 처리 완료")
-
-    with col2:
-        # 결과 표시
-        st.header("💰 비용 비교")
-
-        if st.session_state.processed_files and st.session_state.selected_models:
-            render_results(
-                st.session_state.processed_files,
-                st.session_state.selected_models,
-                st.session_state.output_ratio,
-                st.session_state.exchange_rate,
-                st.session_state.output_mode,
-                st.session_state.output_pages,
-            )
-        else:
-            st.info("👈 파일을 업로드하고 모델을 선택해주세요.")
-
-
-if __name__ == "__main__":
-    main()
+# 푸터
+st.divider()
+st.caption("🤖 Built with Streamlit | 💡 Powered by LLM APIs")
+st.caption("📊 모델 정보는 2025년 1월 기준입니다.")

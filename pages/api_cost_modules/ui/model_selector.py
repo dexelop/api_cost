@@ -8,7 +8,7 @@ from typing import List
 
 import streamlit as st
 
-from src.pricing.calculator import PriceCalculator
+from api_cost_modules.pricing.calculator import PriceCalculator
 
 
 def render_model_selector() -> List[str]:

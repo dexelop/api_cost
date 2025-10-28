@@ -10,7 +10,7 @@ from typing import Optional
 
 import yaml
 
-from config.settings import settings
+from api_cost_modules.config.settings import settings
 
 
 @dataclass
