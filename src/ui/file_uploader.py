@@ -90,6 +90,7 @@ def render_file_uploader() -> List[ProcessedFile]:
             )
             continue
 
+        temp_file_path = None
         try:
             # 임시 파일로 저장
             temp_dir = Path("temp")
@@ -109,11 +110,16 @@ def render_file_uploader() -> List[ProcessedFile]:
             else:
                 st.error(f"❌ {uploaded_file.name}: {processed.error}")
 
-            # 임시 파일 삭제
-            temp_file_path.unlink()
-
         except Exception as e:
             st.error(f"❌ {uploaded_file.name} 처리 실패: {str(e)}")
+        finally:
+            # 임시 파일 삭제 (반드시 실행)
+            if temp_file_path is not None and temp_file_path.exists():
+                try:
+                    temp_file_path.unlink()
+                except Exception:
+                    # 삭제 실패는 무시 (다음 실행 시 덮어쓰기됨)
+                    pass
 
     # 프로그레스 바 제거
     progress_bar.empty()

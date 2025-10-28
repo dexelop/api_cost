@@ -39,28 +39,28 @@ class ExcelFileProcessor(BaseFileProcessor):
 
         # CSV 파일은 pandas로 직접 읽기
         if file_path.suffix.lower() == ".csv":
-            df = pd.read_csv(file_path)
-            return df.to_string(index=False)
+            with open(file_path, 'r', encoding='utf-8-sig', errors='ignore') as f:
+                df = pd.read_csv(f)
+                return df.to_string(index=False)
 
         # Excel 파일 처리
         try:
-            # 모든 시트 읽기
-            excel_file = pd.ExcelFile(file_path)
+            # 모든 시트 읽기 (context manager 사용으로 자동 close)
+            with pd.ExcelFile(file_path) as excel_file:
+                for sheet in excel_file.sheet_names:
+                    # 특정 시트만 읽기 (지정된 경우)
+                    if sheet_name and sheet != sheet_name:
+                        continue
 
-            for sheet in excel_file.sheet_names:
-                # 특정 시트만 읽기 (지정된 경우)
-                if sheet_name and sheet != sheet_name:
-                    continue
+                    # 시트 데이터 읽기
+                    df = pd.read_excel(excel_file, sheet_name=sheet)
 
-                # 시트 데이터 읽기
-                df = pd.read_excel(file_path, sheet_name=sheet)
+                    # 시트 제목 추가
+                    all_text.append(f"=== Sheet: {sheet} ===\n")
 
-                # 시트 제목 추가
-                all_text.append(f"=== Sheet: {sheet} ===\n")
-
-                # DataFrame을 문자열로 변환
-                all_text.append(df.to_string(index=False))
-                all_text.append("\n\n")
+                    # DataFrame을 문자열로 변환
+                    all_text.append(df.to_string(index=False))
+                    all_text.append("\n\n")
 
         except Exception as e:
             all_text.append(f"[시트 데이터 추출 실패: {str(e)}]")
@@ -83,20 +83,22 @@ class ExcelFileProcessor(BaseFileProcessor):
         # CSV 파일은 단순 처리
         if file_path.suffix.lower() == ".csv":
             try:
-                df = pd.read_csv(file_path)
-                metadata.update(
-                    {
-                        "sheet_count": 1,
-                        "row_count": len(df),
-                        "column_count": len(df.columns),
-                        "total_cells": len(df) * len(df.columns),
-                    }
-                )
+                with open(file_path, 'r', encoding='utf-8-sig', errors='ignore') as f:
+                    df = pd.read_csv(f)
+                    metadata.update(
+                        {
+                            "sheet_count": 1,
+                            "row_count": len(df),
+                            "column_count": len(df.columns),
+                            "total_cells": len(df) * len(df.columns),
+                        }
+                    )
             except Exception:
                 pass
             return metadata
 
         # Excel 파일 메타데이터 추출
+        workbook = None
         try:
             workbook = load_workbook(file_path, read_only=True, data_only=True)
 
@@ -121,10 +123,12 @@ class ExcelFileProcessor(BaseFileProcessor):
                 }
             )
 
-            workbook.close()
-
         except Exception as e:
             metadata["extraction_error"] = str(e)
+        finally:
+            # 반드시 workbook 닫기
+            if workbook is not None:
+                workbook.close()
 
         return metadata
 
